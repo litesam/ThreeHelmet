@@ -1,13 +1,20 @@
 const documentColorChanger = document.createElement('div');
+const colorSlider = document.createElement('div');
+const colorHandle = document.createElement('div');
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 scene.background = new THREE.Color(0xffffff); // Sets background color to white
-const event = new EventDispatcher();
 let mtl;
+
 // Initial canvas maker
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+
+// Camera controls
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.autoRotate = true;
+controls.update();
 
 // cube maker
 const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -15,15 +22,26 @@ const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 const cube = new THREE.Mesh(geometry, material);
 // scene.add(cube);
 
-camera.position.z = 5;
+camera.position.z = 7;
 
 // giving light to the canvas
 const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
 scene.add(ambientLight);
 
-const pointLight = new THREE.PointLight(0xffffff, 1);
-camera.add(pointLight);
-scene.add(camera);
+const hemisphereLight = new THREE.HemisphereLight(0xdddddd, 0xffffff, 1);
+const hemisphereLight1 = new THREE.HemisphereLight(0xdddddd, 0xcccccc, 0.9);
+const hemisphereLight2 = new THREE.HemisphereLight(0xdddddd, 0xcccccc, 0.9);
+const hemisphereLight3 = new THREE.HemisphereLight(0xdddddd, 0xcccccc, 0.9);
+hemisphereLight3.position = new THREE.Vector3(0, 0, -1);
+hemisphereLight2.position = new THREE.Vector3(0, 0, 1);
+hemisphereLight1.position = new THREE.Vector3(0, 1, 0);
+scene.add(hemisphereLight3);
+scene.add(hemisphereLight2);
+scene.add(hemisphereLight1);
+scene.add(hemisphereLight);
+
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
+scene.add(directionalLight);
 
 // MTLLoader
 // OBJLoader
@@ -35,7 +53,7 @@ mtlLoader
     function (materials) {
       materials.preload();
       console.log('material-for-helmet', materials);
-      mtl = materials; // remove this piece this is some daring
+      mtl = materials; // remove this piece this is some daring shit
       // OBJLoader
       const loader = new THREE.OBJLoader();
       loader
@@ -51,7 +69,7 @@ mtlLoader
             // Somehow understood how to get individual object from the whole
             // Changing colors is usually the power of Material
             console.log('helmet-obj', obj);
-            obj.children[2].position.x = -2.4;
+            // obj.children[2].position.x = -0.39;
             scene.add(obj);
           },
           function (xhr) {
@@ -66,7 +84,7 @@ mtlLoader
 
 function animate() {
   requestAnimationFrame(animate);
-
+  controls.update();
   // cube.rotation.x += 0.01;
   // cube.rotation.y += 0.01;
   // camera.lookAt(scene.position);
@@ -75,12 +93,41 @@ function animate() {
 
 animate();
 
-documentColorChanger.style.width = '300px';
-documentColorChanger.style.height = '300px';
-documentColorChanger.style.backgroundColor = '#000000';
-documentColorChanger.addEventListener('mousemove', (e) => {
-  mtl.materials.Helmet.color.g = e.clientY / 300;
-  mtl.materials.Helmet.color.r = e.clientX / 300;
-  // mtl.materials.Helmet.color.b = e.clientX / 300;
+// Color picker
+colorSlider.classList.add('slider', 'beach');
+colorHandle.classList.add('handle');
+document.body.appendChild(colorSlider);
+colorSlider.appendChild(colorHandle);
+$(".handle").mousedown(function () {
+  $(this).addClass("pop");
+  $(this).parent(".slider").addClass("grad");
 });
-document.body.appendChild(documentColorChanger);
+$(".handle").mouseup(function () {
+  $(this).removeClass("pop");
+  $(this).parent(".slider").removeClass("grad");
+});
+
+
+$(".handle").draggable({
+  axis: "x",
+  containment: "parent",
+  drag: function (event, ui) {
+    var thisOffset = $(this).position().left;
+    var angle = (thisOffset / 300) * 360;
+    var hslcolor = "hsl(" + angle + ", 100%, 50%)";
+    $(this).css("background-color", hslcolor);
+    const colorHelmet = new THREE.Color(hslcolor);
+    const helmetHSL = colorHelmet.getHSL();
+    mtl.materials.Helmet.color = colorHelmet;
+
+    $(this).parent(".slider").css("background-color", hslcolor)
+  },
+  /*start: function( event, ui ) {
+    $(this).addClass("pop");
+    $(this).parent(".slider").addClass("grad");
+  },*/
+  stop: function (event, ui) {
+    $(this).removeClass("pop");
+    $(this).parent(".slider").removeClass("grad");
+  }
+});
