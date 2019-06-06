@@ -1,6 +1,3 @@
-const documentColorChanger = document.createElement('div');
-const colorSlider = document.createElement('div');
-const colorHandle = document.createElement('div');
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 scene.background = new THREE.Color(0xffffff); // Sets background color to white
@@ -94,40 +91,28 @@ function animate() {
 animate();
 
 // Color picker
-colorSlider.classList.add('slider', 'beach');
-colorHandle.classList.add('handle');
-document.body.appendChild(colorSlider);
-colorSlider.appendChild(colorHandle);
-$(".handle").mousedown(function () {
-  $(this).addClass("pop");
-  $(this).parent(".slider").addClass("grad");
-});
-$(".handle").mouseup(function () {
-  $(this).removeClass("pop");
-  $(this).parent(".slider").removeClass("grad");
-});
+const slider = document.getElementById('slider');
+const picker = document.getElementById('picker');
 
+picker.addEventListener('mousedown', e => {
+  picker.style.position = 'relative';
+  slider.appendChild(picker);
 
-$(".handle").draggable({
-  axis: "x",
-  containment: "parent",
-  drag: function (event, ui) {
-    var thisOffset = $(this).position().left;
-    var angle = (thisOffset / 300) * 360;
-    var hslcolor = "hsl(" + angle + ", 100%, 50%)";
-    $(this).css("background-color", hslcolor);
-    const colorHelmet = new THREE.Color(hslcolor);
-    const helmetHSL = colorHelmet.getHSL();
+  moveAt(e.pageX);
+
+  function moveAt(x) {
+    picker.style.left = (x - picker.offsetWidth / 2) % 360 + 'px';
+    slider.style.background = `hsl(${parseInt(picker.style.left)}, 100%, 50%)`;
+    const colorHelmet = new THREE.Color(slider.style.background);
     mtl.materials.Helmet.color = colorHelmet;
-
-    $(this).parent(".slider").css("background-color", hslcolor)
-  },
-  /*start: function( event, ui ) {
-    $(this).addClass("pop");
-    $(this).parent(".slider").addClass("grad");
-  },*/
-  stop: function (event, ui) {
-    $(this).removeClass("pop");
-    $(this).parent(".slider").removeClass("grad");
   }
+
+  slider.addEventListener('mousemove', e => moveAt(e.clientX));
+
+  picker.addEventListener('mouseup', e => {
+    picker.onmouseup = null;
+    slider.removeEventListener('mousemove', (e) => moveAt(e.clientX));
+  });
 });
+
+picker.addEventListener('dragstart', false);
